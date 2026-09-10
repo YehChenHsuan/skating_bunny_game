@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Hop & Skate: 小兔冰上拼讀大冒險 (Bunny Phonics Ice Adventure)</title>
+  <meta name="description" content="ALICE ESL Phonics P1 專屬 3D 溜冰互動美語學習遊戲，結合自然發音、單字圖卡與動物動作大跳躍。">
+  
+  <!-- 引入 Google Fonts 與樣式表 -->
+  <link rel="stylesheet" href="css/style.css">
+  
+  <!-- 外部依賴函式庫 (Three.js, GLTFLoader, GSAP, Canvas Confetti) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+
+  <!-- 3D 渲染畫布容器 -->
+  <div id="game-canvas-container"></div>
+
+  <!-- 遊戲 HUD 介面層 -->
+  <div class="game-hud-layer">
+    
+    <!-- 頂部資訊與控制欄 -->
+    <header class="hud-top-bar">
+      <!-- 標題與模式切換 -->
+      <div class="hud-title-capsule hud-interactive">
+        <div class="game-logo">
+          <span class="game-logo-icon">🐰</span>
+          <span>Hop & Skate</span>
+        </div>
+        <nav class="mode-selector">
+          <button class="mode-btn active" data-mode="WORD_CATCH" id="btn-mode-catch">聽音尋字</button>
+          <button class="mode-btn" data-mode="PHONICS_CHALLENGE" id="btn-mode-phonics">首字母尋寶</button>
+          <button class="mode-btn" data-mode="ACTION_HOP" id="btn-mode-action">動作大跳躍</button>
+        </nav>
+      </div>
+
+      <!-- 右側統計指標與工具 -->
+      <div class="hud-stats-group hud-interactive">
+        <div class="stat-badge">
+          <span class="stat-label">ROUND</span>
+          <span class="stat-value" id="hud-round">1 / 10</span>
+        </div>
+        <div class="stat-badge combo-badge">
+          <span class="stat-label">COMBO</span>
+          <span class="stat-value" id="hud-combo">0x</span>
+        </div>
+        <div class="stat-badge">
+          <span class="stat-label">SCORE</span>
+          <span class="stat-value" id="hud-score">0</span>
+        </div>
+        
+        <div class="hud-tools">
+          <button class="hint-toggle-btn active" id="toggle-hint" title="開啟或關閉提示卡文字">
+            <span class="hint-icon">💡</span>
+            <span class="hint-label">提示: 開啟</span>
+          </button>
+          <button class="bilingual-toggle-btn active" id="toggle-bilingual" title="切換中英雙語發音">
+            <span>🌐</span>
+            <span class="toggle-label">語音雙語</span>
+          </button>
+          <button class="tool-icon-btn" id="btn-mute" title="靜音/開啟聲音">
+            <span>🔊</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- 中上方：題目指示卡牌 -->
+    <section class="hud-prompt-card hud-interactive" id="hud-prompt-card">
+      <button class="prompt-icon-btn" id="btn-speak-again" title="再聽一次單字發音">
+        <span>📢</span>
+      </button>
+      <div class="prompt-text-container">
+        <h1 class="prompt-title" id="hud-prompt-text">Listen & Skate!</h1>
+        <p class="prompt-subtitle" id="hud-prompt-sub">Guide bunny to the correct flashcard</p>
+      </div>
+    </section>
+
+    <!-- 底部操作提示 -->
+    <footer class="hud-bottom-bar">
+      <div class="control-tips hud-interactive">
+        <div class="tip-item">
+          <span class="kbd-badge">滑鼠移動</span>
+          <span>牽引小兔滑冰</span>
+        </div>
+        <div class="tip-item">
+          <span class="kbd-badge">點擊 / 空白鍵</span>
+          <span>空中 360° 特技跳躍 (Hop!)</span>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- 答對反饋快訊 -->
+  <div class="feedback-toast" id="feedback-toast">Awesome!</div>
+
+  <!-- 開始遊戲彈窗 (Start Modal) -->
+  <div class="modal-overlay" id="start-modal">
+    <div class="modal-card">
+      <div class="modal-hero-icon">🐰❄️</div>
+      <h2 class="modal-title">小兔冰上拼讀大冒險</h2>
+      <p class="modal-desc">
+        歡迎來到冰雪樂園！化身為可愛小兔，一邊在冰面上暢快滑行，一邊學習《ALICE ESL P1》自然發音與精彩單字！
+      </p>
+
+      <div class="modal-features">
+        <div class="feature-item">
+          <span class="feature-icon">🎧</span>
+          <div class="feature-text">
+            <strong>聽音尋找閃卡 (Word Catch)</strong>
+            <span>聆聽美語真人發音，滑向正確的圖卡冰晶寶座！</span>
+          </div>
+        </div>
+        <div class="feature-item">
+          <span class="feature-icon">🥕</span>
+          <div class="feature-text">
+            <strong>首字母瘋狂收集 (Phonics Carrot)</strong>
+            <span>鎖定 [Rr], [Ff], [Dd] 等核心發音，收集指定胡蘿蔔！</span>
+          </div>
+        </div>
+        <div class="feature-item">
+          <span class="feature-icon">⛸️</span>
+          <div class="feature-text">
+            <strong>課本動物動作跳躍 (The rabbit can hop!)</strong>
+            <span>踩上彈跳板觸發旋轉跳躍特技，累積高分！</span>
+          </div>
+        </div>
+      </div>
+
+      <button class="primary-btn hud-interactive" id="btn-start-game">開始滑冰 🚀</button>
+    </div>
+  </div>
+
+  <!-- 結算彈窗 (Game Over Modal) -->
+  <div class="modal-overlay hidden" id="gameover-modal">
+    <div class="modal-card">
+      <div class="modal-hero-icon">🏆</div>
+      <h2 class="modal-title">闖關完成！太棒了！</h2>
+      <div class="stars-display" id="final-stars">⭐⭐⭐</div>
+
+      <div class="score-stats-grid">
+        <div class="score-box">
+          <div class="score-box-label">最終總分</div>
+          <div class="score-box-num" id="final-score">0</div>
+        </div>
+        <div class="score-box">
+          <div class="score-box-label">最高連擊</div>
+          <div class="score-box-num" id="final-combo">0x</div>
+        </div>
+      </div>
+
+      <div class="review-section">
+        <div class="review-heading">📖 本次學習單字回顧（點擊可重聽發音）：</div>
+        <div class="word-chips-container" id="review-word-list">
+          <!-- 動態生成複習單字標籤 -->
+        </div>
+      </div>
+
+      <button class="primary-btn hud-interactive" id="btn-restart-game">再玩一次 🔄</button>
+    </div>
+  </div>
+
+  <!-- 引入遊戲各核心模組代碼 -->
+  <script src="js/data.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/scene.js"></script>
+  <script src="js/bunny.js"></script>
+  <script src="js/collectibles.js"></script>
+  <script src="js/game.js"></script>
+
+</body>
+</html>

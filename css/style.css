@@ -1,0 +1,679 @@
+/* ==========================================================================
+   ESL P1 冰上小兔拼讀大冒險 (Bunny Phonics Ice Adventure) - 核心樣式系統
+   設計風格：冰雪水晶微毛玻璃擬態 (Frosted Glassmorphism) + 活潑學習主題色
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Outfit:wght@400;600;700;800&display=swap');
+
+:root {
+  /* 色彩計畫 */
+  --ice-bg-gradient: linear-gradient(135deg, #dcf0fa 0%, #b8e2f8 100%);
+  --primary-ice: #38bdf8;
+  --primary-deep: #0284c7;
+  --accent-gold: #facc15;
+  --accent-gold-hover: #eab308;
+  --accent-coral: #fb7185;
+  --accent-mint: #34d399;
+  
+  /* 毛玻璃面板 */
+  --glass-bg: rgba(255, 255, 255, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.85);
+  --glass-shadow: 0 12px 32px 0 rgba(28, 77, 114, 0.18);
+  --glass-blur: blur(16px);
+
+  /* 字體系統 */
+  --font-display: 'Fredoka', 'Outfit', system-ui, sans-serif;
+  --font-ui: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /* 圓角 */
+  --radius-sm: 10px;
+  --radius-md: 18px;
+  --radius-lg: 26px;
+  --radius-full: 9999px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--ice-bg-gradient);
+  font-family: var(--font-ui);
+  color: #0f172a;
+}
+
+/* 3D 渲染畫布容器 */
+#game-canvas-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  cursor: grab;
+}
+
+#game-canvas-container:active {
+  cursor: grabbing;
+}
+
+/* ==========================================================================
+   遊戲 HUD 介面層 (Heads-Up Display)
+   ========================================================================== */
+
+.game-hud-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+  pointer-events: none; /* 穿透點擊至 3D 畫布，按鈕單獨設定 pointer-events: auto */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 20px 24px;
+}
+
+.hud-interactive {
+  pointer-events: auto;
+}
+
+/* 頂部導航與狀態欄 */
+.hud-top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  gap: 16px;
+}
+
+/* 標題與模式切換膠囊 */
+.hud-title-capsule {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1.5px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  padding: 8px 18px;
+  border-radius: var(--radius-full);
+}
+
+.game-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--primary-deep);
+}
+
+.game-logo-icon {
+  font-size: 1.6rem;
+  animation: bunnyWiggle 3s infinite ease-in-out;
+}
+
+@keyframes bunnyWiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-8deg); }
+  75% { transform: rotate(8deg); }
+}
+
+/* 模式選擇標籤列 */
+.mode-selector {
+  display: flex;
+  gap: 6px;
+  background: rgba(224, 242, 254, 0.6);
+  padding: 4px;
+  border-radius: var(--radius-full);
+}
+
+.mode-btn {
+  background: transparent;
+  border: none;
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.mode-btn:hover {
+  color: var(--primary-deep);
+  transform: translateY(-1px);
+}
+
+.mode-btn.active {
+  background: #ffffff;
+  color: var(--primary-deep);
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.18);
+}
+
+/* 右上方分數與連擊徽章 */
+.hud-stats-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.stat-badge {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1.5px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  padding: 8px 16px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stat-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+}
+
+.stat-value {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--primary-deep);
+}
+
+.combo-badge.fever {
+  background: linear-gradient(135deg, #fef08a, #facc15);
+  border-color: #fef9c3;
+  animation: feverPulse 0.8s infinite alternate ease-in-out;
+}
+
+.combo-badge.fever .stat-value {
+  color: #854d0e;
+}
+
+@keyframes feverPulse {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.08); }
+}
+
+/* 控制功能按鈕 (喇叭、雙語切換) */
+.hud-tools {
+  display: flex;
+  gap: 8px;
+}
+
+.tool-icon-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1.5px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.tool-icon-btn:hover {
+  transform: scale(1.1);
+  background: #ffffff;
+}
+
+.tool-icon-btn.muted {
+  opacity: 0.6;
+}
+
+.hint-toggle-btn {
+  height: 42px;
+  padding: 0 16px;
+  border-radius: var(--radius-full);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  border: 1.5px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-display);
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.hint-toggle-btn.active {
+  background: linear-gradient(135deg, #fef08a, #fde047);
+  color: #854d0e;
+  border-color: #facc15;
+  box-shadow: 0 4px 14px rgba(250, 204, 21, 0.35);
+}
+
+.hint-toggle-btn:hover {
+  transform: translateY(-1px) scale(1.03);
+}
+
+.bilingual-toggle-btn {
+  height: 42px;
+  padding: 0 16px;
+  border-radius: var(--radius-full);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  border: 1.5px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-display);
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.bilingual-toggle-btn.active {
+  background: linear-gradient(135deg, #e0f2fe, #bae6fd);
+  color: var(--primary-deep);
+  border-color: #7dd3fc;
+}
+
+/* ==========================================================================
+   中上方：題目指示卡牌 (Task Prompt Banner)
+   ========================================================================== */
+
+.hud-prompt-card {
+  align-self: center;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 2px solid var(--glass-border);
+  box-shadow: 0 16px 36px rgba(14, 116, 144, 0.18);
+  padding: 12px 26px;
+  border-radius: var(--radius-lg);
+  margin-top: 10px;
+  animation: slideDownFade 0.4s ease;
+}
+
+@keyframes slideDownFade {
+  from { opacity: 0; transform: translateY(-16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.prompt-icon-btn {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #38bdf8, #0284c7);
+  border: none;
+  color: #ffffff;
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(2, 132, 199, 0.35);
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: pulseAudio 2s infinite;
+}
+
+.prompt-icon-btn:hover {
+  transform: scale(1.12);
+}
+
+@keyframes pulseAudio {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.6); }
+  50% { box-shadow: 0 0 0 12px rgba(56, 189, 248, 0); }
+}
+
+.prompt-text-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.prompt-title {
+  font-family: var(--font-display);
+  font-size: 1.55rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.prompt-subtitle {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #475569;
+}
+
+/* ==========================================================================
+   底部操作提示欄 (Bottom Bar)
+   ========================================================================== */
+
+.hud-bottom-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  width: 100%;
+}
+
+.control-tips {
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  padding: 8px 18px;
+  border-radius: var(--radius-full);
+  display: flex;
+  gap: 16px;
+  font-size: 0.88rem;
+  color: #475569;
+  box-shadow: var(--glass-shadow);
+}
+
+.tip-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.kbd-badge {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #334155;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+}
+
+/* 答對反饋快訊 Toast */
+.feedback-toast {
+  position: absolute;
+  top: 45%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.7);
+  opacity: 0;
+  pointer-events: none;
+  padding: 16px 36px;
+  border-radius: var(--radius-lg);
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  font-weight: 700;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  z-index: 50;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.15);
+}
+
+.feedback-toast.show {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.feedback-toast.correct {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #ffffff;
+  box-shadow: 0 16px 40px rgba(16, 185, 129, 0.4);
+}
+
+.feedback-toast.wrong {
+  background: linear-gradient(135deg, #f43f5e, #e11d48);
+  color: #ffffff;
+  box-shadow: 0 16px 40px rgba(244, 63, 94, 0.4);
+}
+
+/* ==========================================================================
+   彈出視窗模態框 (Modal Dialogs: Start & Game Over)
+   ========================================================================== */
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  transition: opacity 0.3s ease;
+}
+
+.modal-overlay.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.modal-card {
+  background: #ffffff;
+  border-radius: var(--radius-lg);
+  padding: 36px 40px;
+  max-width: 520px;
+  width: 100%;
+  box-shadow: 0 24px 60px rgba(2, 132, 199, 0.25);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: 3px solid #e0f2fe;
+  animation: modalPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes modalPop {
+  0% { transform: scale(0.85); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.modal-hero-icon {
+  font-size: 3.5rem;
+  margin-bottom: 8px;
+  animation: bounceSlow 2s infinite ease-in-out;
+}
+
+@keyframes bounceSlow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.modal-title {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--primary-deep);
+  margin-bottom: 8px;
+}
+
+.modal-desc {
+  font-size: 1.05rem;
+  color: #475569;
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+
+.modal-features {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  margin-bottom: 28px;
+  text-align: left;
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #f8fafc;
+  padding: 12px 18px;
+  border-radius: var(--radius-md);
+  border: 1px solid #e2e8f0;
+}
+
+.feature-icon {
+  font-size: 1.4rem;
+}
+
+.feature-text strong {
+  display: block;
+  font-size: 0.95rem;
+  color: #1e293b;
+}
+
+.feature-text span {
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.primary-btn {
+  background: linear-gradient(135deg, #38bdf8, #0284c7);
+  color: #ffffff;
+  border: none;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 700;
+  padding: 14px 44px;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(2, 132, 199, 0.35);
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.primary-btn:hover {
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 14px 30px rgba(2, 132, 199, 0.45);
+}
+
+/* 結算星級與複習單字列表 */
+.stars-display {
+  font-size: 2.5rem;
+  margin: 12px 0;
+  letter-spacing: 6px;
+}
+
+.score-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.score-box {
+  background: #f0f9ff;
+  border: 1.5px solid #bae6fd;
+  border-radius: var(--radius-md);
+  padding: 14px;
+}
+
+.score-box-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #0369a1;
+}
+
+.score-box-num {
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #0c4a6e;
+}
+
+.review-section {
+  width: 100%;
+  margin-bottom: 24px;
+  text-align: left;
+}
+
+.review-heading {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 10px;
+}
+
+.word-chips-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-height: 140px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.word-chip {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.word-chip:hover {
+  background: #e0f2fe;
+  border-color: #38bdf8;
+  transform: translateY(-2px);
+}
+
+.word-chip span {
+  font-weight: 700;
+  color: #0369a1;
+}
+
+.word-chip small {
+  color: #64748b;
+  font-size: 0.78rem;
+}
+
+/* ==========================================================================
+   響應式適配 (Responsive Breakpoints)
+   ========================================================================== */
+
+@media (max-width: 768px) {
+  .hud-top-bar {
+    flex-wrap: wrap;
+  }
+  .mode-selector {
+    display: none; /* 手機端精簡標籤 */
+  }
+  .hud-prompt-card {
+    padding: 10px 18px;
+  }
+  .prompt-title {
+    font-size: 1.25rem;
+  }
+  .control-tips {
+    display: none; /* 手機端自動隱藏鍵盤指引 */
+  }
+}
