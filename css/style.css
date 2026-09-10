@@ -660,12 +660,12 @@ html, body {
    響應式適配 (Responsive Breakpoints)
    ========================================================================== */
 
-@media (max-width: 768px) {
+@media (max-width: 768px) and (orientation: portrait) {
   .hud-top-bar {
     flex-wrap: wrap;
   }
   .mode-selector {
-    display: none; /* 手機端精簡標籤 */
+    display: none;
   }
   .hud-prompt-card {
     padding: 10px 18px;
@@ -674,6 +674,291 @@ html, body {
     font-size: 1.25rem;
   }
   .control-tips {
-    display: none; /* 手機端自動隱藏鍵盤指引 */
+    display: none;
+  }
+}
+
+/* ==========================================================================
+   手機強制橫向引導遮罩 (Orientation Lock Overlay)
+   ========================================================================== */
+.orientation-lock-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 999999;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.96) 0%, rgba(2, 44, 74, 0.98) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  box-sizing: border-box;
+  text-align: center;
+  color: #ffffff;
+  pointer-events: auto;
+}
+
+@media screen and (orientation: portrait) {
+  .orientation-lock-overlay {
+    display: flex !important;
+  }
+}
+
+.orientation-card {
+  max-width: 380px;
+  width: 92%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  border-radius: 28px;
+  padding: 30px 22px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.rotate-phone-anim {
+  position: relative;
+  width: 88px;
+  height: 88px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
+.phone-frame {
+  width: 44px;
+  height: 74px;
+  border: 3.5px solid #38bdf8;
+  border-radius: 12px;
+  position: relative;
+  animation: phoneRotateAnim 2.4s ease-in-out infinite;
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.4);
+}
+
+.phone-screen {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  right: 4px;
+  bottom: 6px;
+  background: rgba(56, 189, 248, 0.25);
+  border-radius: 6px;
+}
+
+.phone-notch {
+  position: absolute;
+  top: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 12px;
+  height: 2px;
+  background: #38bdf8;
+  border-radius: 2px;
+}
+
+.rotate-arrow {
+  position: absolute;
+  font-size: 26px;
+  right: -6px;
+  bottom: -4px;
+  animation: rotateSpin 2.4s linear infinite;
+}
+
+@keyframes phoneRotateAnim {
+  0%, 15% {
+    transform: rotate(0deg);
+  }
+  45%, 75% {
+    transform: rotate(-90deg);
+  }
+  90%, 100% {
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes rotateSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.orientation-title {
+  font-size: 21px;
+  font-weight: 700;
+  color: #f8fafc;
+  line-height: 1.3;
+}
+
+.orientation-en {
+  font-size: 13px;
+  color: #94a3b8;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.orientation-tip {
+  font-size: 13px;
+  color: #cbd5e1;
+  line-height: 1.5;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 10px 14px;
+  border-radius: 14px;
+}
+
+.btn-fullscreen-landscape {
+  margin-top: 4px;
+  background: linear-gradient(135deg, #0284c7, #0ea5e9);
+  color: #ffffff;
+  border: none;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 10px 22px;
+  border-radius: 9999px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.4);
+  transition: transform 0.2s ease;
+}
+
+.btn-fullscreen-landscape:hover {
+  transform: translateY(-2px);
+}
+
+/* ==========================================================================
+   手機橫向專屬緊湊響應式排版 (Mobile Landscape Compact UI)
+   ========================================================================== */
+@media screen and (orientation: landscape) and (max-height: 520px) {
+  .game-hud-layer {
+    padding: 4px 10px !important;
+  }
+
+  .hud-top-bar {
+    gap: 6px !important;
+    align-items: center !important;
+  }
+
+  .hud-title-capsule {
+    padding: 2px 8px !important;
+    gap: 6px !important;
+  }
+
+  .game-logo {
+    font-size: 1.05rem !important;
+    gap: 4px !important;
+  }
+
+  .mode-selector {
+    gap: 2px !important;
+    display: flex !important;
+  }
+
+  .mode-btn {
+    padding: 2px 6px !important;
+    font-size: 11px !important;
+  }
+
+  .hud-stats-group {
+    gap: 4px !important;
+    align-items: center !important;
+  }
+
+  .stat-badge {
+    padding: 2px 6px !important;
+    border-radius: 8px !important;
+  }
+
+  .stat-label {
+    font-size: 8px !important;
+  }
+
+  .stat-value {
+    font-size: 12px !important;
+  }
+
+  .hud-tools {
+    gap: 4px !important;
+  }
+
+  .hint-toggle-btn, .bilingual-toggle-btn {
+    padding: 2px 6px !important;
+    font-size: 11px !important;
+  }
+
+  .tool-icon-btn {
+    width: 26px !important;
+    height: 26px !important;
+    font-size: 13px !important;
+  }
+
+  .hud-prompt-card {
+    padding: 3px 12px !important;
+    gap: 8px !important;
+    border-radius: 14px !important;
+    max-width: 480px !important;
+    margin: 0 auto !important;
+  }
+
+  .prompt-icon-btn {
+    width: 26px !important;
+    height: 26px !important;
+    font-size: 13px !important;
+  }
+
+  .prompt-title {
+    font-size: 13px !important;
+    margin: 0 !important;
+  }
+
+  .prompt-subtitle {
+    font-size: 10px !important;
+    margin: 0 !important;
+  }
+
+  .control-tips {
+    display: none !important;
+  }
+
+  /* 彈窗在手機橫向下的滑動與緊湊排版 */
+  .modal-card {
+    padding: 10px 16px !important;
+    max-height: 94vh !important;
+    overflow-y: auto !important;
+    border-radius: 18px !important;
+    width: 92% !important;
+  }
+
+  .modal-hero-icon {
+    font-size: 26px !important;
+    margin-bottom: 2px !important;
+  }
+
+  .modal-title {
+    font-size: 1.15rem !important;
+    margin-bottom: 4px !important;
+  }
+
+  .modal-sub {
+    font-size: 0.8rem !important;
+    margin-bottom: 6px !important;
+  }
+
+  .settings-grid {
+    padding: 6px 10px !important;
+    gap: 6px !important;
+    margin-bottom: 8px !important;
+  }
+
+  .setting-row {
+    font-size: 11px !important;
+  }
+
+  .primary-btn {
+    padding: 8px 24px !important;
+    font-size: 14px !important;
   }
 }

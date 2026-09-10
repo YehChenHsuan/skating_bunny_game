@@ -52,6 +52,10 @@ class WorldScene {
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.container.appendChild(this.renderer.domElement);
 
+    // 視窗自適應縮放監聽
+    window.addEventListener('resize', () => this.onWindowResize());
+    window.addEventListener('orientationchange', () => setTimeout(() => this.onWindowResize(), 150));
+
     // 4. 設定光影系統
     this.setupLights();
 
@@ -69,6 +73,16 @@ class WorldScene {
 
     // 9. 事件監聽
     this.bindEvents();
+  }
+
+  onWindowResize() {
+    this.width = window.innerWidth;
+    this.height = window.innerHeight;
+    if (this.camera && this.renderer) {
+      this.camera.aspect = this.width / this.height;
+      this.camera.updateProjectionMatrix();
+      this.renderer.setSize(this.width, this.height);
+    }
   }
 
   setupLights() {

@@ -32,12 +32,54 @@ class ESLBunnyGame {
 
     this.bindControls();
     this.bindUI();
+    this.initOrientationHandler();
 
     this.lastFrameTime = performance.now();
     this.loop = this.loop.bind(this);
     requestAnimationFrame(this.loop);
 
     this.showStartScreen();
+  }
+
+  /**
+   * 手機直立防護與橫向全螢幕引導
+   */
+  initOrientationHandler() {
+    const overlay = document.getElementById("orientation-lock-overlay");
+    const btn = document.getElementById("btn-force-landscape");
+
+    const checkOrientation = () => {
+      if (!overlay) return;
+      const isPortrait = window.innerHeight > window.innerWidth;
+      if (isPortrait) {
+        overlay.style.display = "flex";
+      } else {
+        overlay.style.display = "none";
+      }
+    };
+
+    window.addEventListener("resize", checkOrientation);
+    window.addEventListener("orientationchange", () => {
+      setTimeout(checkOrientation, 150);
+    });
+    checkOrientation();
+
+    if (btn) {
+      btn.addEventListener("click", async () => {
+        try {
+          if (document.documentElement.requestFullscreen) {
+            await document.documentElement.requestFullscreen();
+          } else if (document.documentElement.webkitRequestFullscreen) {
+            await document.documentElement.webkitRequestFullscreen();
+          }
+          if (screen.orientation && screen.orientation.lock) {
+            await screen.orientation.lock("landscape").catch(() => {});
+          }
+        } catch (e) {
+          console.log("Orientation lock info:", e);
+        }
+      });
+    }
   }
 
   bindControls() {
