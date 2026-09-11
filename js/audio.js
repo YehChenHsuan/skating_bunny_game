@@ -242,39 +242,53 @@ class SoundController {
   }
 
   /**
-   * 朗讀完整句子 (使用瀏覽器原生 Web Speech API 自然語音)
+   * 朗讀完整句子 (使用預先合成之 Google Cloud Neural2 最高品質音檔)
    * @param {string} text - 英文句子
    * @param {Function} onEnded - 朗讀結束回呼
    */
   speakSentence(text, onEnded = null) {
-    if (this.isMuted || !text) return;
+    if (this.isMuted || !text) {
+      if (onEnded) onEnded();
+      return;
+    }
     this.stopVoice();
 
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel(); // 停止先前的朗讀
+    const audioMap = {
+      "Collect all carrots starting with Ff": "assets/audios/sentences/bunny_collect_ff.mp3",
+      "Find words starting with letter Ff": "assets/audios/sentences/bunny_find_ff.mp3",
+      "Collect all carrots starting with Dd": "assets/audios/sentences/bunny_collect_dd.mp3",
+      "Find words starting with letter Dd": "assets/audios/sentences/bunny_find_dd.mp3",
+      "Collect all carrots starting with Hh": "assets/audios/sentences/bunny_collect_hh.mp3",
+      "Find words starting with letter Hh": "assets/audios/sentences/bunny_find_hh.mp3",
+      "Collect all carrots starting with Rr": "assets/audios/sentences/bunny_collect_rr.mp3",
+      "Find words starting with letter Rr": "assets/audios/sentences/bunny_find_rr.mp3",
+      "Collect all carrots starting with Ss": "assets/audios/sentences/bunny_collect_ss.mp3",
+      "Find words starting with letter Ss": "assets/audios/sentences/bunny_find_ss.mp3",
+      "Collect all carrots starting with Jj": "assets/audios/sentences/bunny_collect_jj.mp3",
+      "Find words starting with letter Jj": "assets/audios/sentences/bunny_find_jj.mp3",
+      "Collect all carrots starting with Kk": "assets/audios/sentences/bunny_collect_kk.mp3",
+      "Find words starting with letter Kk": "assets/audios/sentences/bunny_find_kk.mp3",
+      "Ted has a rabbit. The rabbit can hop! ... What can the rabbit do?": "assets/audios/sentences/bunny_action_rabbit_hop.mp3",
+      "Diego has a dog. The dog can run! ... What can the dog do?": "assets/audios/sentences/bunny_action_dog_run.mp3",
+      "Kim has a fish. The fish can swim! ... What can the fish do?": "assets/audios/sentences/bunny_action_fish_swim.mp3",
+      "Josh has a frog. The frog can jump! ... What can the frog do?": "assets/audios/sentences/bunny_action_frog_jump.mp3",
+      "Zac has a duck. The duck can walk! ... What can the duck do?": "assets/audios/sentences/bunny_action_duck_walk.mp3"
+    };
 
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'en-US';
-      utterance.rate = 0.88; // 稍微放慢速度，適合學童聽力
-      utterance.pitch = 1.05; // 稍微提高音調，活潑親切
+    const clean = text.trim();
+    const audioPath = audioMap[clean];
 
-      // 嘗試選取高品質美式英語語音
-      const voices = window.speechSynthesis.getVoices();
-      const usVoice = voices.find(v => v.lang === 'en-US' && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('Zira')));
-      if (usVoice) {
-        utterance.voice = usVoice;
-      }
-
-      utterance.onend = () => {
+    if (audioPath) {
+      this.currentAudio = new Audio(audioPath);
+      this.currentAudio.onended = () => { if (onEnded) onEnded(); };
+      this.currentAudio.onerror = () => { if (onEnded) onEnded(); };
+      this.currentAudio.play().catch(e => {
         if (onEnded) onEnded();
-      };
-      utterance.onerror = () => {
-        if (onEnded) onEnded();
-      };
-
-      window.speechSynthesis.speak(utterance);
+      });
     } else {
-      if (onEnded) onEnded();
+      // 嘗試播放單字音檔
+      const fb = `P1_flashcards_audios/P1_${clean.toLowerCase()}.mp3`;
+      this.playAudioFile(fb, onEnded);
     }
   }
 
