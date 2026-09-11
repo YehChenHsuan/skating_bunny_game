@@ -1,4 +1,4 @@
-{
+window.SENTENCES_AUDIO_MAP = {
   "Collect all carrots starting with Ff": "assets/audios/sentences/bunny_collect_ff.mp3",
   "Find words starting with Ff": "assets/audios/sentences/bunny_find_ff.mp3",
   "Find words starting with letter Ff": "assets/audios/sentences/bunny_find_let_ff.mp3",
@@ -25,4 +25,4 @@
   "Diego has a dog. The dog can run. ... What can the dog do?": "assets/audios/sentences/bunny_act_783a2af3.mp3",
   "Paul has an owl. The owl can fly. ... What can the owl do?": "assets/audios/sentences/bunny_act_d86ba39e.mp3",
   "Zac has a duck. The duck can walk. ... What can the duck do?": "assets/audios/sentences/bunny_act_f98776d4.mp3"
-}
+};

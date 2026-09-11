@@ -253,30 +253,9 @@ class SoundController {
     }
     this.stopVoice();
 
-    const audioMap = {
-      "Collect all carrots starting with Ff": "assets/audios/sentences/bunny_collect_ff.mp3",
-      "Find words starting with letter Ff": "assets/audios/sentences/bunny_find_ff.mp3",
-      "Collect all carrots starting with Dd": "assets/audios/sentences/bunny_collect_dd.mp3",
-      "Find words starting with letter Dd": "assets/audios/sentences/bunny_find_dd.mp3",
-      "Collect all carrots starting with Hh": "assets/audios/sentences/bunny_collect_hh.mp3",
-      "Find words starting with letter Hh": "assets/audios/sentences/bunny_find_hh.mp3",
-      "Collect all carrots starting with Rr": "assets/audios/sentences/bunny_collect_rr.mp3",
-      "Find words starting with letter Rr": "assets/audios/sentences/bunny_find_rr.mp3",
-      "Collect all carrots starting with Ss": "assets/audios/sentences/bunny_collect_ss.mp3",
-      "Find words starting with letter Ss": "assets/audios/sentences/bunny_find_ss.mp3",
-      "Collect all carrots starting with Jj": "assets/audios/sentences/bunny_collect_jj.mp3",
-      "Find words starting with letter Jj": "assets/audios/sentences/bunny_find_jj.mp3",
-      "Collect all carrots starting with Kk": "assets/audios/sentences/bunny_collect_kk.mp3",
-      "Find words starting with letter Kk": "assets/audios/sentences/bunny_find_kk.mp3",
-      "Ted has a rabbit. The rabbit can hop! ... What can the rabbit do?": "assets/audios/sentences/bunny_action_rabbit_hop.mp3",
-      "Diego has a dog. The dog can run! ... What can the dog do?": "assets/audios/sentences/bunny_action_dog_run.mp3",
-      "Kim has a fish. The fish can swim! ... What can the fish do?": "assets/audios/sentences/bunny_action_fish_swim.mp3",
-      "Josh has a frog. The frog can jump! ... What can the frog do?": "assets/audios/sentences/bunny_action_frog_jump.mp3",
-      "Zac has a duck. The duck can walk! ... What can the duck do?": "assets/audios/sentences/bunny_action_duck_walk.mp3"
-    };
-
     const clean = text.trim();
-    const audioPath = audioMap[clean];
+    const map = window.SENTENCES_AUDIO_MAP || {};
+    const audioPath = map[clean] || map[clean.replace(/,\s*/g, ' ')];
 
     if (audioPath) {
       this.currentAudio = new Audio(audioPath);
@@ -286,8 +265,9 @@ class SoundController {
         if (onEnded) onEnded();
       });
     } else {
-      // 嘗試播放單字音檔
-      const fb = `P1_flashcards_audios/P1_${clean.toLowerCase()}.mp3`;
+      // 嘗試播放單字音檔備援
+      const book = window.BOOK_ID || "P1";
+      const fb = book + "_flashcards_audios/" + book + "_" + clean.toLowerCase() + ".mp3";
       this.playAudioFile(fb, onEnded);
     }
   }

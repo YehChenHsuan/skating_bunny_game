@@ -269,8 +269,10 @@ class ESLBunnyGame {
    * 模式一：聽音尋字關卡
    */
   setupWordCatchRound() {
-    const targetIdx = Math.floor(Math.random() * P1_VOCABULARY.length);
-    const targetItem = P1_VOCABULARY[targetIdx];
+    const book = window.BOOK_ID || "P1";
+    const vocabList = window[`${book}_VOCABULARY`] || window.P1_VOCABULARY || [];
+    const targetIdx = Math.floor(Math.random() * vocabList.length);
+    const targetItem = vocabList[targetIdx];
     this.currentQuestion = {
       type: "word",
       targetItem: targetItem
@@ -278,7 +280,7 @@ class ESLBunnyGame {
     this.reviewedWords.push(targetItem);
 
     // 挑選 2 個干擾字
-    const distractors = P1_VOCABULARY.filter((v) => v.id !== targetItem.id);
+    const distractors = vocabList.filter((v) => v.id !== targetItem.id);
     this.shuffleArray(distractors);
     const chosenDistractors = distractors.slice(0, 2);
 
@@ -337,12 +339,22 @@ class ESLBunnyGame {
 
     const spawnPositions = this.generateRandomPositions(allWords.length, 6.5, 4.8);
 
+    const book = window.BOOK_ID || "P1";
+    const vocabList = window[`${book}_VOCABULARY`] || window.P1_VOCABULARY || [];
     allWords.forEach((w, idx) => {
       const [x, z] = spawnPositions[idx];
       const isCorrect = correctWords.includes(w);
+      const vocabItem = vocabList.find(v => v.word.toLowerCase() === w.toLowerCase()) || {
+        id: w,
+        word: w,
+        image: `${book}_flashcards_images/${book}_${w}.webp`,
+        audioEn: `${book}_flashcards_audios/${book}_${w}.mp3`,
+        audioZh: `${book}_flashcards_audios/${book}_${w}_zh.mp3`
+      };
       const item = this.collectibles.spawnCarrot(targetLetter, w, x, z);
       item.isCorrect = isCorrect;
       item.word = w;
+      item.vocabItem = vocabItem;
     });
 
     this.updatePromptCard();
@@ -365,12 +377,16 @@ class ESLBunnyGame {
     };
 
     const positions = this.generateRandomPositions(qData.options.length, 6.5, 5.5);
+    const book = window.BOOK_ID || "P1";
+    const vocabList = window[`${book}_VOCABULARY`] || window.P1_VOCABULARY || [];
 
     qData.options.forEach((optWord, idx) => {
-      const vocab = P1_VOCABULARY.find((v) => v.word.toLowerCase() === optWord.toLowerCase()) || {
+      const vocab = vocabList.find((v) => v.word.toLowerCase() === optWord.toLowerCase()) || {
         id: optWord,
         word: optWord,
-        image: `P1_flashcards_images/P1_${optWord}.webp`
+        image: `${book}_flashcards_images/${book}_${optWord}.webp`,
+        audioEn: `${book}_flashcards_audios/${book}_${optWord}.mp3`,
+        audioZh: `${book}_flashcards_audios/${book}_${optWord}_zh.mp3`
       };
       const [x, z] = positions[idx];
       const isCorrect = optWord.toLowerCase() === qData.correct.toLowerCase();
@@ -457,12 +473,16 @@ class ESLBunnyGame {
         const earned = 100 + this.combo * 20;
         this.score += earned;
 
-        // 播放單字發音與成功音效！
-        this.sound.playSuccess();
-        if (item.vocabItem) {
-          this.sound.playWordAudio(item.vocabItem, this.isBilingual);
-        } else {
-          this.sound.speakSentence(item.word);
+        // 播放單字發音與成功音效 (安全防護)
+        try {
+          this.sound.playSuccess();
+          if (item.vocabItem) {
+            this.sound.playWordAudio(item.vocabItem, this.isBilingual);
+          } else {
+            this.sound.speakSentence(item.word);
+          }
+        } catch (audioErr) {
+          console.warn("Carrot audio error safely ignored:", audioErr);
         }
 
         this.updateHUD();
