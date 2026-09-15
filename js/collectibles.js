@@ -102,9 +102,19 @@ class CollectiblesManager {
     cardGroup.add(front);
 
     // 嘗試非同步載入高解析真實教材圖片
-    if (vocabItem.image) {
+    let imgSrc = null;
+    const bookId = window.BOOK_ID || "";
+    const bookImages = (window[`${bookId}_FLASHCARD_IMAGES`] || window.FLASHCARD_IMAGES);
+    if (bookImages) {
+      imgSrc = bookImages[vocabItem.id] || bookImages[vocabItem.word] || bookImages[vocabItem.image];
+    }
+    if (!imgSrc) {
+      imgSrc = vocabItem.image;
+    }
+
+    if (imgSrc) {
       this.textureLoader.load(
-        vocabItem.image,
+        imgSrc,
         (tex) => {
           tex.minFilter = THREE.LinearFilter;
           front.material.map = tex;
