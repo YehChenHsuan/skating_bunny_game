@@ -1,16 +1,19 @@
 /**
  * ESL 音訊與音效管理器 (Audio & SFX Controller)
  * 結合 Web Audio API 即時合成音效與 HTML5 Audio 教材真人發音
+ * 修正：統一語音通道管理，徹底防止語音重疊播放
  */
 
 class SoundController {
   constructor() {
     this.audioCtx = null;
     this.isMuted = false;
-    this.voiceAudio = null;
+    this.voiceAudio = null;    // 單字語音通道
+    this.currentAudio = null;  // 句子朗讀通道
     this.currentWordItem = null;
     this.isBgmPlaying = false;
     this.lastSkateTime = 0;
+    this._zhDelayTimer = null; // 中文語音延遲計時器，停止時需清除
 
     // 延遲初始化 Web Audio，配合瀏覽器使用者手勢政策
     this.initAudioContext();
@@ -31,10 +34,58 @@ class SoundController {
 
   toggleMute() {
     this.isMuted = !this.isMuted;
-    if (this.voiceAudio && this.isMuted) {
-      this.voiceAudio.pause();
+    if (this.isMuted) {
+      // 靜音時立即停止所有語音通道
+      this.stopAllVoice();
     }
     return this.isMuted;
+  }
+
+  /**
+   * 統一停止所有語音通道（voiceAudio + currentAudio + 中文延遲計時器）
+   * 所有播放方法開頭必須先呼叫此函式，確保不會有任何語音重疊
+   */
+  stopAllVoice() {
+    // 清除中文語音延遲計時器
+    if (this._zhDelayTimer) {
+      clearTimeout(this._zhDelayTimer);
+      this._zhDelayTimer = null;
+    }
+
+    // 停止 speechSynthesis (備援用)
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+
+    // 停止單字語音通道
+    if (this.voiceAudio) {
+      this.voiceAudio.onended = null; // 移除回呼防止觸發後續連鎖
+      this.voiceAudio.onerror = null;
+      this.voiceAudio.pause();
+      try { this.voiceAudio.currentTime = 0; } catch (e) {}
+      this.voiceAudio = null;
+    }
+
+    // 停止句子朗讀通道
+    if (this.currentAudio) {
+      this.currentAudio.onended = null;
+      this.currentAudio.onerror = null;
+      this.currentAudio.pause();
+      try { this.currentAudio.currentTime = 0; } catch (e) {}
+      this.currentAudio = null;
+    }
+
+    this.currentWordItem = null;
+  }
+
+  /**
+   * 查詢是否有語音正在播放
+   * @returns {boolean}
+   */
+  isVoicePlaying() {
+    const voicePlaying = this.voiceAudio && !this.voiceAudio.paused && !this.voiceAudio.ended;
+    const sentencePlaying = this.currentAudio && !this.currentAudio.paused && !this.currentAudio.ended;
+    return !!(voicePlaying || sentencePlaying);
   }
 
   /**
@@ -201,6 +252,7 @@ class SoundController {
 
   /**
    * 播放單字美語真人發音（可選擇是否接續中文釋義）
+   * 修正：開頭先呼叫 stopAllVoice() 停止所有已在播放的語音
    * @param {Object} item - P1_VOCABULARY 項目
    * @param {boolean} includeZh - 是否在英文播放後接著播放中文
    * @param {Function} onEnded - 播放結束回呼
@@ -208,12 +260,8 @@ class SoundController {
   playWordAudio(item, includeZh = false, onEnded = null) {
     if (this.isMuted || !item) return;
 
-    // 停止上一個語音
-    if (this.voiceAudio) {
-      this.voiceAudio.pause();
-      this.voiceAudio.currentTime = 0;
-      this.voiceAudio = null;
-    }
+    // ★ 修正核心：停止所有正在播放的語音（包括句子通道），防止重疊
+    this.stopAllVoice();
 
     this.currentWordItem = item;
     const audio = new Audio(item.audioEn);
@@ -221,8 +269,9 @@ class SoundController {
 
     audio.onended = () => {
       if (includeZh && item.audioZh) {
-        // 延遲 300ms 播放中文解釋
-        setTimeout(() => {
+        // 延遲 300ms 播放中文解釋，並記錄計時器以供中途取消
+        this._zhDelayTimer = setTimeout(() => {
+          this._zhDelayTimer = null;
           if (this.isMuted || this.currentWordItem !== item) return;
           const zhAudio = new Audio(item.audioZh);
           this.voiceAudio = zhAudio;
@@ -242,7 +291,37 @@ class SoundController {
   }
 
   /**
+   * 播放指定路徑的音檔（通用備援方法）
+   * 修正：原 speakSentence() 的 fallback 路徑呼叫此方法但未定義
+   * @param {string} filePath - 音檔檔案路徑
+   * @param {Function} onEnded - 播放結束回呼
+   */
+  playAudioFile(filePath, onEnded = null) {
+    if (this.isMuted || !filePath) {
+      if (onEnded) onEnded();
+      return;
+    }
+
+    // 停止所有語音防止重疊
+    this.stopAllVoice();
+
+    const audio = new Audio(filePath);
+    this.currentAudio = audio;
+
+    audio.onended = () => { if (onEnded) onEnded(); };
+    audio.onerror = () => {
+      console.warn("playAudioFile 載入失敗：", filePath);
+      if (onEnded) onEnded();
+    };
+    audio.play().catch(e => {
+      console.warn("playAudioFile 播放失敗：", e);
+      if (onEnded) onEnded();
+    });
+  }
+
+  /**
    * 朗讀完整句子 (使用預先合成之 Google Cloud Neural2 最高品質音檔)
+   * 修正：開頭改用 stopAllVoice() 同時停止兩個通道
    * @param {string} text - 英文句子
    * @param {Function} onEnded - 朗讀結束回呼
    */
@@ -251,7 +330,9 @@ class SoundController {
       if (onEnded) onEnded();
       return;
     }
-    this.stopVoice();
+
+    // ★ 修正核心：停止所有語音通道，防止與 playWordAudio 重疊
+    this.stopAllVoice();
 
     const clean = text.trim();
     const map = window.SENTENCES_AUDIO_MAP || {};
@@ -265,7 +346,7 @@ class SoundController {
         if (onEnded) onEnded();
       });
     } else {
-      // 嘗試播放單字音檔備援
+      // 嘗試播放單字音檔備援（使用新增的 playAudioFile 方法）
       const book = window.BOOK_ID || "P1";
       const fb = book + "_flashcards_audios/" + book + "_" + clean.toLowerCase() + ".mp3";
       this.playAudioFile(fb, onEnded);
@@ -274,16 +355,10 @@ class SoundController {
 
   /**
    * 停止當前正在播放的教材語音或句子朗讀
+   * 修正：委派給 stopAllVoice() 統一管理，確保兩個通道都被清理
    */
   stopVoice() {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-    }
-    if (this.voiceAudio) {
-      this.voiceAudio.pause();
-      this.voiceAudio.currentTime = 0;
-      this.voiceAudio = null;
-    }
+    this.stopAllVoice();
   }
 }
 

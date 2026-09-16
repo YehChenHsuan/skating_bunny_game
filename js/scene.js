@@ -29,6 +29,7 @@ class WorldScene {
     this.raycaster = new THREE.Raycaster();
     this.mouse = new THREE.Vector2();
     this.targetPos = new THREE.Vector3(0, 0, 0);
+    this._hitPoint = new THREE.Vector3(); // 預分配射線碰撞點，避免每幀建立新物件
 
     this.init();
   }
@@ -346,8 +347,6 @@ class WorldScene {
   }
 
   bindEvents() {
-    window.addEventListener('resize', () => this.onResize());
-
     // 桌面滑鼠移動
     window.addEventListener('mousemove', (e) => this.onPointerMove(e.clientX, e.clientY));
 
@@ -364,21 +363,12 @@ class WorldScene {
     this.mouse.y = -(clientY / window.innerHeight) * 2 + 1;
 
     this.raycaster.setFromCamera(this.mouse, this.camera);
-    const hitPoint = new THREE.Vector3();
-    if (this.raycaster.ray.intersectPlane(this.floorPlane, hitPoint)) {
+    if (this.raycaster.ray.intersectPlane(this.floorPlane, this._hitPoint)) {
       // 限制在冰場半徑邊界內 (-12 ~ +12)
-      this.targetPos.x = Math.max(-12, Math.min(12, hitPoint.x));
-      this.targetPos.z = Math.max(-12, Math.min(12, hitPoint.z));
+      this.targetPos.x = Math.max(-12, Math.min(12, this._hitPoint.x));
+      this.targetPos.z = Math.max(-12, Math.min(12, this._hitPoint.z));
       this.targetPos.y = 0;
     }
-  }
-
-  onResize() {
-    this.width = window.innerWidth;
-    this.height = window.innerHeight;
-    this.camera.aspect = this.width / this.height;
-    this.camera.updateProjectionMatrix();
-    this.renderer.setSize(this.width, this.height);
   }
 
   render() {

@@ -300,7 +300,15 @@ class CollectiblesManager {
   }
 
   explodeParticles(x, y, z, isGolden = true) {
-    const count = 50;
+    const count = 30; // ★ 優化：從 50 降至 30 提升幀率
+    const maxPoolSize = 150; // 粒子池總數上限
+
+    // 若粒子池即將超過上限，先淘汰最舊的粒子
+    while (this.particlePool.length + count > maxPoolSize && this.particlePool.length > 0) {
+      const oldest = this.particlePool.shift();
+      this.particleGroup.remove(oldest.mesh);
+    }
+
     for (let i = 0; i < count; i++) {
       const isGold = Math.random() > 0.35;
       const mesh = new THREE.Mesh(

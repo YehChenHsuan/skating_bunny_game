@@ -20,6 +20,8 @@ class ESLBunnyGame {
     this.showPromptHint = true; // 提示卡文字顯示開關 (true: 開啟提示, false: 隱藏提示純聽力)
     this.isPaused = false;
     this.reviewedWords = [];
+    this.audioRetryTimer = null; // 答錯重播計時器，碰撞時需取消以防重疊
+    this.wordAudioDelayTimer = null; // 音效→語音延遲計時器
 
     this.currentQuestion = null;
     this.canCollide = false;
@@ -171,6 +173,10 @@ class ESLBunnyGame {
     this.stars = 0;
     this.round = 0;
     this.reviewedWords = [];
+    // 清除殘留的音訊計時器，防止跨局語音重疊
+    if (this.audioRetryTimer) { clearTimeout(this.audioRetryTimer); this.audioRetryTimer = null; }
+    if (this.wordAudioDelayTimer) { clearTimeout(this.wordAudioDelayTimer); this.wordAudioDelayTimer = null; }
+    this.sound.stopAllVoice();
     this.updateHUD();
     this.nextRound();
   }
@@ -413,7 +419,10 @@ class ESLBunnyGame {
       const targetItem = this.currentQuestion.targetItem;
       if (this.showPromptHint) {
         promptText.innerText = `Find: "${targetItem.word}"`;
-        promptSub.innerText = `Phonics: ${targetItem.letter} ${targetItem.phonics} • Glide to the card!`;
+        // 修正：letter/phonics 欄位在 P1_VOCABULARY 中不存在，改用首字母與單字本身做備援
+        const letter = targetItem.letter || targetItem.word.charAt(0).toUpperCase();
+        const phonics = targetItem.phonics || targetItem.word;
+        promptSub.innerText = `Phonics: ${letter} ${phonics} • Glide to the card!`;
       } else {
         promptText.innerText = `Listen & Find! 🎧`;
         promptSub.innerText = `Click 📢 to replay sound • Choose the right card!`;
@@ -455,6 +464,16 @@ class ESLBunnyGame {
   handleCollision(item) {
     if (!this.canCollide) return false;
 
+    // ★ 修正：每次新碰撞先取消上一次的答錯重播計時器，防止語音重疊
+    if (this.audioRetryTimer) {
+      clearTimeout(this.audioRetryTimer);
+      this.audioRetryTimer = null;
+    }
+    if (this.wordAudioDelayTimer) {
+      clearTimeout(this.wordAudioDelayTimer);
+      this.wordAudioDelayTimer = null;
+    }
+
     if (this.currentMode === "PHONICS_CHALLENGE") {
       // ===== 模式二：字母尋寶專屬判定邏輯 =====
       const q = this.currentQuestion;
@@ -473,13 +492,19 @@ class ESLBunnyGame {
         const earned = 100 + this.combo * 20;
         this.score += earned;
 
-        // 播放單字發音與成功音效 (安全防護)
+        // ★ 修正：先播音效，延遲 350ms 後再播單字語音，防止音效與語音重疊
         try {
           this.sound.playSuccess();
           if (item.vocabItem) {
-            this.sound.playWordAudio(item.vocabItem, this.isBilingual);
+            this.wordAudioDelayTimer = setTimeout(() => {
+              this.wordAudioDelayTimer = null;
+              this.sound.playWordAudio(item.vocabItem, this.isBilingual);
+            }, 350);
           } else {
-            this.sound.speakSentence(item.word);
+            this.wordAudioDelayTimer = setTimeout(() => {
+              this.wordAudioDelayTimer = null;
+              this.sound.speakSentence(item.word);
+            }, 350);
           }
         } catch (audioErr) {
           console.warn("Carrot audio error safely ignored:", audioErr);
@@ -528,12 +553,16 @@ class ESLBunnyGame {
       const earnedScore = 100 + this.combo * 20;
       this.score += earnedScore;
 
+      // ★ 修正：先播音效(成功+連擊)，延遲 350ms 後才播單字語音，避免重疊
       this.sound.playSuccess();
       this.sound.playCombo(this.combo);
       this.bunny.jump();
 
       if (item.vocabItem) {
-        this.sound.playWordAudio(item.vocabItem, this.isBilingual);
+        this.wordAudioDelayTimer = setTimeout(() => {
+          this.wordAudioDelayTimer = null;
+          this.sound.playWordAudio(item.vocabItem, this.isBilingual);
+        }, 350);
       }
 
       this.showFeedbackToast(`🎉 Excellent! +${earnedScore}`, "correct");
@@ -550,7 +579,9 @@ class ESLBunnyGame {
       this.bunny.vel.x = -this.bunny.vel.x * 1.5;
       this.bunny.vel.z = -this.bunny.vel.z * 1.5;
 
-      setTimeout(() => {
+      // ★ 修正：使用 audioRetryTimer 管理延遲重播，下次碰撞時可取消
+      this.audioRetryTimer = setTimeout(() => {
+        this.audioRetryTimer = null;
         this.repeatQuestionAudio();
       }, 500);
       return false; // 錯誤卡牌不移除
@@ -601,8 +632,14 @@ class ESLBunnyGame {
     const reviewList = document.getElementById("review-word-list");
     if (reviewList) {
       reviewList.innerHTML = "";
-      const uniqueWords = Array.from(new Set(this.reviewedWords));
-      uniqueWords.forEach((w) => {
+      // ★ 修正：使用 Map 以 id 做 key 去重，Set 對物件 reference 比較無效
+      const wordMap = new Map();
+      this.reviewedWords.forEach((w) => {
+        if (w && w.id && !wordMap.has(w.id)) {
+          wordMap.set(w.id, w);
+        }
+      });
+      wordMap.forEach((w) => {
         const chip = document.createElement("div");
         chip.className = "word-chip";
         chip.innerHTML = `<span>${w.word}</span> <small>${w.zh || ""}</small>`;

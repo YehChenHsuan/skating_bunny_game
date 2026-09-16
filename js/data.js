@@ -477,14 +477,12 @@ const ANIMAL_ACTION_QUESTIONS = [
 // 全域掛載相容變數
 if (typeof window !== "undefined") {
   window.P1_VOCABULARY = P1_VOCABULARY;
-  window.P1_VOCABULARY = P1_VOCABULARY;
   window.PHONICS_GROUPS = PHONICS_GROUPS;
   window.ANIMAL_ACTION_QUESTIONS = ANIMAL_ACTION_QUESTIONS;
 }
 
 if (typeof module !== "undefined" && module.exports) {
   module.exports = {
-    P1_VOCABULARY: P1_VOCABULARY,
     P1_VOCABULARY,
     PHONICS_GROUPS,
     ANIMAL_ACTION_QUESTIONS
